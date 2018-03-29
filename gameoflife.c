@@ -12,6 +12,20 @@
 #define GRID_WIDTH  256
 #define DIM  16     // assume a square grid
 
+int get_adjacent ( int* grid, int pos ) {
+
+  int adjacent = 0;
+
+  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM)     % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH)       % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH)       % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM)     % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
+  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
+}
+
 int main ( int argc, char** argv ) {
 
   int global_grid[ 256 ] = 
