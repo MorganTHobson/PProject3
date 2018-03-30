@@ -83,6 +83,12 @@ int main ( int argc, char** argv ) {
   MPI_Status stat;
   // TODO add other variables as necessary
 
+  // variables for intermediate grid buffer
+  int buff_size;
+  int* buffer;
+  int grid_offset;
+  int adjacent;
+
   // MPI Setup
   if ( MPI_Init( &argc, &argv ) != MPI_SUCCESS )
   {
@@ -95,9 +101,39 @@ int main ( int argc, char** argv ) {
   assert ( DIM % num_procs == 0 );
 
   // TODO Setup your environment as necessary
+  buff_size = GRID_WIDTH / num_procs;
+  buffer = (int*)malloc(buff_size * sizeof(int));
+
+  grid_offset = ID * buff_size;
+
+  for ( int i = 0; i < buff_size; i++ ) {
+    buffer[i] = global_grid[grid_offset + i];
+  }
 
   for ( iters = 0; iters < num_iterations; iters++ ) {
     // TODO: Add Code here or a function call to you MPI code
+
+    for ( int i = 0; i < buff_size; i++ ) {
+      adjacent = get_adjacent( global_grid, grid_offset + i );
+      switch(adjacent) {
+        case 3:
+          buffer[i] = 1;
+          break;
+        case 2:
+          buffer[i] = global_grid[i];
+          break;
+        default:
+          buffer[i] = 0;
+      }
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
+
+    for (int i = 0; i < buff_size; i++) {
+      global_grid[grid_offset + i] = buffer[i];
+    }
+
+    MPI_Barrier( MPI_COMM_WORLD );
 
     // Output the updated grid state
     if ( ID == 0 ) {
@@ -113,5 +149,8 @@ int main ( int argc, char** argv ) {
   }
 
   // TODO: Clean up memory
+
+  free( buffer );
+
   MPI_Finalize(); // finalize so I can exit
 }
