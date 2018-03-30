@@ -16,14 +16,29 @@ int get_adjacent ( int* grid, int pos ) {
 
   int adjacent = 0;
 
-  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM)     % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH - DIM) % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH)       % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH)       % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM - 1) % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM)     % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
-  adjacent += grid[ (pos + DIM + 1) % DIM + (pos + GRID_WIDTH + DIM) % GRID_WIDTH ];
+  // Convert 1d positions to grid coordinates
+  int x = pos % DIM;
+  int y = pos / DIM;
+
+  int x_left = (x + DIM - 1) % DIM;
+  int x_right = (x + 1) % DIM;
+  int y_up = (y + DIM - 1) % DIM;
+  int y_down = (y + 1) % DIM;
+
+  // Convert y values to 1d array scale
+  y *= 16;
+  y_up *= 16;
+  y_down *= 16;
+
+  adjacent += grid[ x_left  + y_up ];
+  adjacent += grid[ x       + y_up ];
+  adjacent += grid[ x_right + y_up ];
+  adjacent += grid[ x_left  + y ];
+  adjacent += grid[ x_right + y ];
+  adjacent += grid[ x_left  + y_down ];
+  adjacent += grid[ x       + y_down ];
+  adjacent += grid[ x_right + y_down ];
+  return adjacent;
 }
 
 int main ( int argc, char** argv ) {
