@@ -164,12 +164,20 @@ int main ( int argc, char** argv ) {
       }
     }
 
+    // Set grid region for next iteration
     for ( int i = 0; i < buff_size; i++ ) {
       global_grid[grid_offset + i] = buffer[i];
     }
 
     // Output the updated grid state
     if ( ID == 0 ) {
+      for ( int id = 1; id < num_procs; id++ ) {
+        MPI_Recv( buffer, buff_size, MPI_INT, id, 2, MPI_COMM_WORLD, &stat );
+        for ( int j = 0; j < buff_size; j++ ) {
+          global_grid[ id * buff_size + j ] = buffer[ j ];
+        }
+      }
+
       printf ( "\nIteration %d: final grid:\n", iters );
       for ( j = 0; j < GRID_WIDTH; j++ ) {
         if ( j % DIM == 0 ) {
@@ -178,11 +186,14 @@ int main ( int argc, char** argv ) {
         printf ( "%d  ", global_grid[j] );
       }
       printf( "\n" );
+    } else {
+      MPI_Send( buffer, buff_size, MPI_INT, 0, 2, MPI_COMM_WORLD );
     }
   }
 
   // TODO: Clean up memory
 
+  free( buffer );
   free( send_up );
   free( send_down );
   free( recv_up );
