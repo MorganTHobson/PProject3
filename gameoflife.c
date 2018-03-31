@@ -81,7 +81,6 @@ int main ( int argc, char** argv ) {
 
   // Messaging variables
   MPI_Status stat;
-  // TODO add other variables as necessary
   int* send_up;
   int* send_down;
   int* recv_up;
@@ -106,7 +105,6 @@ int main ( int argc, char** argv ) {
 
   assert ( DIM % num_procs == 0 );
 
-  // TODO Setup your environment as necessary
   buff_size = GRID_WIDTH / num_procs;
   buffer = (int*)malloc(buff_size * sizeof(int));
   send_up = (int*)malloc(DIM * sizeof(int));
@@ -119,7 +117,6 @@ int main ( int argc, char** argv ) {
   ID_up = (ID + 1) % num_procs;
 
   for ( iters = 0; iters < num_iterations; iters++ ) {
-    // TODO: Add Code here or a function call to you MPI code
 
     // Gather "seen" rows for adjacent procs
     for ( int i = 0; i < DIM; i++ ) {
@@ -191,7 +188,6 @@ int main ( int argc, char** argv ) {
     }
   }
 
-  // TODO: Clean up memory
 
   free( buffer );
   free( send_up );
