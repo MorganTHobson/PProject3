@@ -81,10 +81,10 @@ int main ( int argc, char** argv ) {
 
   // Messaging variables
   MPI_Status stat;
-  int* send_up;
-  int* send_down;
-  int* recv_up;
-  int* recv_down;
+  int  send_up;
+  int  send_down;
+  int  recv_up;
+  int  recv_down;
   int  ID_down;
   int  ID_up;
 
@@ -107,46 +107,33 @@ int main ( int argc, char** argv ) {
 
   buff_size = GRID_WIDTH / num_procs;
   buffer = (int*)malloc(buff_size * sizeof(int));
-  send_up = (int*)malloc(DIM * sizeof(int));
-  send_down = (int*)malloc(DIM * sizeof(int));
-  recv_up = (int*)malloc(DIM * sizeof(int));
-  recv_down = (int*)malloc(DIM * sizeof(int));
 
   grid_offset = ID * buff_size;
   ID_down = (ID + num_procs - 1) % num_procs;
   ID_up = (ID + 1) % num_procs;
+  send_down = grid_offset;
+  send_up = (grid_offset + buff_size - DIM) % GRID_WIDTH;
+  recv_down = (grid_offset + GRID_WIDTH - DIM) % GRID_WIDTH;
+  recv_up = (grid_offset + buff_size) % GRID_WIDTH;
 
   for ( iters = 0; iters < num_iterations; iters++ ) {
-
-    // Gather "seen" rows for adjacent procs
-    for ( int i = 0; i < DIM; i++ ) {
-      send_down[ i ] = global_grid[ grid_offset + i ];
-      send_up[ i ] = global_grid[ (grid_offset + buff_size - DIM + i) % GRID_WIDTH ];
-    }
-
 
     // Split messages to avoid deadlock
     if ( ID % 2 == 0 ) {
       // order: send then recieve
-      MPI_Send( send_down, DIM, MPI_INT, ID_down, 0, MPI_COMM_WORLD );
-      MPI_Send( send_up, DIM, MPI_INT, ID_up, 1, MPI_COMM_WORLD );
-      MPI_Recv( recv_down, DIM, MPI_INT, ID_down, 1, MPI_COMM_WORLD, &stat );
-      MPI_Recv( recv_up, DIM, MPI_INT, ID_up, 0, MPI_COMM_WORLD, &stat );
+      MPI_Send( global_grid + send_down, DIM, MPI_INT, ID_down, 0, MPI_COMM_WORLD );
+      MPI_Send( global_grid + send_up, DIM, MPI_INT, ID_up, 1, MPI_COMM_WORLD );
+      MPI_Recv( global_grid + recv_down, DIM, MPI_INT, ID_down, 1, MPI_COMM_WORLD, &stat );
+      MPI_Recv( global_grid + recv_up, DIM, MPI_INT, ID_up, 0, MPI_COMM_WORLD, &stat );
     } else {
       // order: recieve then send
-      MPI_Recv( recv_up, DIM, MPI_INT, ID_up, 0, MPI_COMM_WORLD, &stat );
-      MPI_Recv( recv_down, DIM, MPI_INT, ID_down, 1, MPI_COMM_WORLD, &stat );
-      MPI_Send( send_up, DIM, MPI_INT, ID_up, 1, MPI_COMM_WORLD );
-      MPI_Send( send_down, DIM, MPI_INT, ID_down, 0, MPI_COMM_WORLD );
+      MPI_Recv( global_grid + recv_up, DIM, MPI_INT, ID_up, 0, MPI_COMM_WORLD, &stat );
+      MPI_Recv( global_grid + recv_down, DIM, MPI_INT, ID_down, 1, MPI_COMM_WORLD, &stat );
+      MPI_Send( global_grid + send_up, DIM, MPI_INT, ID_up, 1, MPI_COMM_WORLD );
+      MPI_Send( global_grid + send_down, DIM, MPI_INT, ID_down, 0, MPI_COMM_WORLD );
     }
 
-    // Apply "seen" rows from adjacent procs
-    for ( int i = 0; i < DIM; i++ ) {
-      global_grid[ (grid_offset + GRID_WIDTH - DIM + i) % GRID_WIDTH ] = recv_down[ i ];
-      global_grid[ (grid_offset + buff_size + i) % GRID_WIDTH ] = recv_up[ i ];
-    }
-
-
+    // Process horizontal slice
     for ( int i = 0; i < buff_size; i++ ) {
       adjacent = get_adjacent( global_grid, grid_offset + i );
       switch(adjacent) {
@@ -163,11 +150,12 @@ int main ( int argc, char** argv ) {
 
     // Set grid region for next iteration
     for ( int i = 0; i < buff_size; i++ ) {
-      global_grid[grid_offset + i] = buffer[i];
+      global_grid[ grid_offset + i ] = buffer[i];
     }
 
     // Output the updated grid state
     if ( ID == 0 ) {
+      // Recieve states from other horizontal slices
       for ( int id = 1; id < num_procs; id++ ) {
         MPI_Recv( buffer, buff_size, MPI_INT, id, 2, MPI_COMM_WORLD, &stat );
         for ( int j = 0; j < buff_size; j++ ) {
@@ -184,16 +172,13 @@ int main ( int argc, char** argv ) {
       }
       printf( "\n" );
     } else {
+      // Send horizontal slices to proc 0
       MPI_Send( buffer, buff_size, MPI_INT, 0, 2, MPI_COMM_WORLD );
     }
   }
 
 
   free( buffer );
-  free( send_up );
-  free( send_down );
-  free( recv_up );
-  free( recv_down );
 
   MPI_Finalize(); // finalize so I can exit
 }
